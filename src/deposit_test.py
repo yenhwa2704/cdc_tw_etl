@@ -61,11 +61,13 @@ def _process_raw_df(df: pd.DataFrame, data_dt: datetime.date):
     df[['銀行代碼', '銀行名稱']] = df['銀行'].str.split(' ', expand=True)
     df['存期'] = df['存期'].apply(lambda x: x.translate(str.maketrans('１２３４５６７８９０', '1234567890')))
     df['額度'] = df['額度'].apply(lambda x: x.translate(str.maketrans('１２３４５６７８９０', '1234567890')))
-    # df['額度'] = df['額度'].apply(lambda x: chinese_to_int(x))  # [TODO]
+    df['amounts'] = df['額度'].apply(lambda x: chinese_to_arabic(x))  # [TODO]
     df['生效日期'] = df['生效日期'].apply(lambda x: roc2ad(x))
     df['異動別'] = df['異動別'].str.replace(')', '')  # Remove the closing parenthesis
     df['資料日期'] = data_dt
-    cols = ['資料日期', '異動識別碼', '異動別', '銀行代碼', '銀行名稱', '牌告利率名稱', '存期', '額度', '生效日期', '固定', '機動']
+    cols = [
+        '資料日期', '異動識別碼', '異動別', '銀行代碼', '銀行名稱',
+        '牌告利率名稱', '存期', '額度', 'amounts', '生效日期', '固定', '機動']
     df = df[cols]
     return df
 
@@ -86,20 +88,34 @@ def find_date(text: str):
         raise ValueError('cannot find the date')
 
 
-def chinese_to_int(chinese_num: str):  # [TODO]
-    if chinese_num == '一般':
-        return np.nan
-    # Create a dictionary mapping Chinese characters to their corresponding multipliers.
-    multipliers = {
-        '億': 100000000,
-        '仟萬': 10000000,
-        '佰萬': 1000000,
-        '萬': 10000,
-        '仟': 1000,
-        '佰': 100,
-        '十': 10
-    }
-    return 0
+def chinese_to_arabic(s):
+    units = {'億': 100000000, '萬': 10000, '仟': 1000, '佰': 100, '拾': 10}
+
+    def parse_part(part):
+        total = 0
+        num = 0
+        for char in part:
+            if char.isdigit():
+                num = int(char)
+            elif char in units:
+                total += num * units[char]
+                num = 0
+            else:
+                raise ValueError(f"未知的字符: {char}")
+        total += num
+        return total
+
+    total = 0
+    if '億' in s:
+        parts = s.split('億')
+        total += parse_part(parts[0]) * units['億']
+        s = '億'.join(parts[1:])
+    if '萬' in s:
+        parts = s.split('萬')
+        total += parse_part(parts[0]) * units['萬']
+        s = '萬'.join(parts[1:])
+    total += parse_part(s)
+    return total
 
 
 def fetch_raw_text(url: str, file_path):
