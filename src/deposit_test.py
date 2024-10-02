@@ -1,16 +1,35 @@
+import os
 import re
+import logging
+import requests
 import numpy as np
 import pandas as pd
 from datetime import datetime
 
+CWD = os.getcwd()
+today = datetime.now().date()
 
-def main(file_path: str = 'bkrldc.txt'):
+
+def main(url: str = 'https://www.cbc.gov.tw/tw/public/Data/bkrldc.txt', filename: str = 'bkrldc'):
+    # create save data path
+    os.makedirs(os.path.join(CWD, 'data', 'tables'), exist_ok=True)
+    os.makedirs(os.path.join(CWD, 'data', 'texts'), exist_ok=True)
+
+    # fetch data
+    file_path = os.path.join(CWD, 'data', 'texts', f'{filename}_{today}.txt')
+    fetch_raw_text(url=url, file_path=file_path)
+
+    # tranform to dataframe and process the dataframe
     df, data_dt = _get_deposit_data(file_path)
     df = _process_raw_df(df, data_dt)
+
+    # save dataframe
+    save_path = os.path.join(CWD, r'data', 'tables', f"{filename}_{data_dt}.csv")
+    df.to_csv(save_path, index=False)
     return df
 
 
-def _get_deposit_data(file_path: str = 'bkrldc.txt'):
+def _get_deposit_data(file_path: str):
     with open(file_path, 'r', encoding='big5') as f:
         data = f.readlines()
     data_dt = roc2ad(find_date(data[2]), sep='/')
@@ -19,7 +38,7 @@ def _get_deposit_data(file_path: str = 'bkrldc.txt'):
     current_bank = ''
     for line in data[7:]:
         if "-----" in line:
-            print('end')
+            logging.info('finished to process all rows')
             break
         line = line.replace('\u3000', ' ').replace('\n', ' ').strip()
         row = [t for t in line.split(' ') if t != '']
@@ -27,12 +46,13 @@ def _get_deposit_data(file_path: str = 'bkrldc.txt'):
             row = row[0:2] + [''] + row[2:]
         if len(row) < 3:
             current_bank = line
-            print(line)
+            logging.info(f"{line}, starts processing.")
             continue
         record = {k: v for k, v in zip(columns[:len(row)], row)}
         record['銀行'] = current_bank
         df.append(record)
     df = pd.DataFrame.from_records(df)
+    df[[col for col in columns if col not in df.columns]] = np.nan  # fill not existing columns
     return df, data_dt
 
 
@@ -66,13 +86,7 @@ def find_date(text: str):
         raise ValueError('cannot find the date')
 
 
-def chinese_to_int(chinese_num: str):
-    """Converts a Chinese number string to an integer.
-    Args:
-        chinese_num (str): The Chinese number string.
-    Returns:
-        int: The corresponding integer value, or np.nan if the string is '一般'.
-    """
+def chinese_to_int(chinese_num: str):  # [TODO]
     if chinese_num == '一般':
         return np.nan
     # Create a dictionary mapping Chinese characters to their corresponding multipliers.
@@ -85,15 +99,15 @@ def chinese_to_int(chinese_num: str):
         '佰': 100,
         '十': 10
     }
-    # Initialize the result to 0.
-    result = 0
-    # Iterate over each character in the Chinese number string.
-    for i in range(len(chinese_num)):
-        # If the current character is a multiplier, add it to the result.
-        if chinese_num[i] in multipliers:
-            result += int(chinese_num[i-1]) * multipliers[chinese_num[i]]
-        # Otherwise, the current character is a digit, so add it to the result.
-        else:
-            result += int(chinese_num[i])
+    return 0
 
-    return result
+
+def fetch_raw_text(url: str, file_path):
+    # url = 'https://www.cbc.gov.tw/tw/public/Data/bkrldc.txt'
+    response = requests.get(url)
+
+    # Save the content to a file
+    with open(file_path, 'wb') as file:
+        file.write(response.content)
+
+    logging.info(f"File downloaded and saved as {file_path}")
