@@ -8,10 +8,13 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from src.utils import CWD, TODAY
+from src.utils import exception_handler
 from src.utils import roc2ad, find_date, chinese_to_arabic
 
 
+@exception_handler
 def main(url: str = 'https://www.cbc.gov.tw/tw/public/Data/bkrldc.txt', filename: str = 'bkrldc'):
+    logging.info('the main function has started.')
     # create save data path
     os.makedirs(os.path.join(CWD, 'data', 'tables'), exist_ok=True)
     os.makedirs(os.path.join(CWD, 'data', 'texts'), exist_ok=True)
@@ -30,6 +33,7 @@ def main(url: str = 'https://www.cbc.gov.tw/tw/public/Data/bkrldc.txt', filename
     return df
 
 
+@exception_handler
 def _get_deposit_data(file_path: str):
     """
     text -> dataframe
@@ -63,6 +67,7 @@ def _get_deposit_data(file_path: str):
     return df, data_dt
 
 
+@exception_handler
 def _process_raw_df(df: pd.DataFrame, data_dt: datetime.date):
     """
     process dataframe to a more understandable version
@@ -85,6 +90,7 @@ def _process_raw_df(df: pd.DataFrame, data_dt: datetime.date):
     return df
 
 
+@exception_handler
 def _fetch_raw_text(url: str, file_path):
     """
     fetch raw text from the webpage

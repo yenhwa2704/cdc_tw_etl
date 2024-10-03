@@ -11,6 +11,19 @@ CWD = os.getcwd()
 TODAY = datetime.now().date()
 
 
+def exception_handler(func):
+    def wrapper(*args, **kwargs):
+        try:
+            output = func(*args, **kwargs)
+            logging.info(f"successfully execute the function: {func.__name__}")
+            return output
+        except Exception as e:
+            logging.error(f"Exception occurred in {func.__name__}: {str(e)}", exc_info=True)
+            print(f"An error occurred: {e}")
+            raise
+    return wrapper
+
+
 def roc2ad(date_str: str, sep: str = '.'):
     """
     transfer ROC date string to a generalised date format
