@@ -92,18 +92,20 @@ def chinese_to_arabic(s):
     units = {'億': 100000000, '萬': 10000, '仟': 1000, '佰': 100, '拾': 10}
 
     def parse_part(part):
-        total = 0
-        num = 0
+        part_num = 0
+        num = ''
         for char in part:
             if char.isdigit():
-                num = int(char)
+                num += char
             elif char in units:
-                total += num * units[char]
-                num = 0
+                num = int(num)
+                part_num += num * units[char]
+                num = ''
             else:
-                raise ValueError(f"未知的字符: {char}")
-        total += num
-        return total
+                raise ValueError(f"unknown char: {char}")
+        num = 0 if num == '' else int(num)
+        part_num += num
+        return part_num
 
     total = 0
     if '億' in s:
