@@ -1,3 +1,6 @@
+"""
+This script aims to query the txt data from the cdc of Taiwan and transform the data into table format.
+"""
 import os
 import logging
 import requests
@@ -28,6 +31,12 @@ def main(url: str = 'https://www.cbc.gov.tw/tw/public/Data/bkrldc.txt', filename
 
 
 def _get_deposit_data(file_path: str):
+    """
+    text -> dataframe
+    :returns
+        df: transferred data
+        data_dt: date of the data recorded in the file
+    """
     with open(file_path, 'r', encoding='big5') as f:
         data = f.readlines()
     data_dt = roc2ad(find_date(data[2]), sep='/')
@@ -55,6 +64,12 @@ def _get_deposit_data(file_path: str):
 
 
 def _process_raw_df(df: pd.DataFrame, data_dt: datetime.date):
+    """
+    process dataframe to a more understandable version
+    :param df: raw dataframe to be processed
+    :param data_dt: date of the data
+    :return: processed dataframe
+    """
     df[['異動識別碼', '異動別']] = df['異動識別碼(異動別)'].str.split('(', expand=True)
     df[['銀行代碼', '銀行名稱']] = df['銀行'].str.split(' ', expand=True)
     df['存期'] = df['存期'].apply(lambda x: x.translate(str.maketrans('１２３４５６７８９０', '1234567890')))
@@ -71,6 +86,9 @@ def _process_raw_df(df: pd.DataFrame, data_dt: datetime.date):
 
 
 def _fetch_raw_text(url: str, file_path):
+    """
+    fetch raw text from the webpage
+    """
     # url = 'https://www.cbc.gov.tw/tw/public/Data/bkrldc.txt'
     response = requests.get(url)
 

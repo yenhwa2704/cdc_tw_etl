@@ -1,9 +1,10 @@
+"""
+This script stores the functions that may be used in other cases
+such as processing date and numeric format
+"""
 import os
 import re
 import logging
-import requests
-import numpy as np
-import pandas as pd
 from datetime import datetime
 
 CWD = os.getcwd()
@@ -11,11 +12,20 @@ TODAY = datetime.now().date()
 
 
 def roc2ad(date_str: str, sep: str = '.'):
+    """
+    transfer ROC date string to a generalised date format
+    :param date_str: ROC format date string (113.01.01, 105-03-04)
+    :param sep: 'the char to separate y, m, d'
+    :return: datetime.date
+    """
     y, m, d = [int(i) for i in date_str.split(sep)]
     return datetime(y + 1911, m, d).date()
 
 
 def find_date(text: str):
+    """
+    find the ROC date string in a string and return the string
+    """
     pattern = r'\d{3}/\d{2}/\d{2}'
     match = re.search(pattern, text)
 
@@ -27,6 +37,9 @@ def find_date(text: str):
 
 
 def chinese_to_arabic(s):
+    """
+    transfer chinese to arabic numbers
+    """
     units = {'億': 100000000, '萬': 10000, '仟': 1000, '佰': 100, '拾': 10}
 
     def parse_part(part):
